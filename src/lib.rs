@@ -51,10 +51,9 @@ async fn handle(msg: Message) {
 
 async fn handle_inner(msg: Message, client: discord_flows::http::Http) {
     let thread_id = create_thread().await;
-    let chat_id = msg.id.to_string();
+    let channel_id = msg.channel_id.to_string();
 
-    store_flows::set(&chat_id, serde_json::Value::String(thread_id.clone()), None);
-    store_flows::set("chat_id", serde_json::Value::String(chat_id), None);
+    store_flows::set(&channel_id, serde_json::Value::String(thread_id.clone()), None);
     let response = run_message(thread_id.as_str(), msg.content).await;
     _ = client
         .send_message(
@@ -81,23 +80,21 @@ async fn handler(ac: ApplicationCommandInteraction) {
 async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows::http::Http) {
     match ac.data.name.as_str() {
         "restart" => {
-            // let chat_id = ac.channel_id.into();
-            if let Some(id) = store_flows::get("chat_id") {
-                if let Some(ti) = store_flows::get(id.as_str().unwrap()) {
-                    delete_thread(ti.as_str().unwrap()).await;
-                    store_flows::del(id.as_str().unwrap());
-                    _ = client
-                        .create_interaction_response(
-                            ac.id.into(),
-                            &ac.token,
-                            &serde_json::json!({
-                                "content": "thread deleted",
-                                // "type": InteractionResponseType::DeferredChannelMessageWithSource as u8,
-                            }),
-                        )
-                        .await;
-                    return;
-                }
+            let channel_id = ac.channel_id.to_string();
+            if let Some(ti) = store_flows::get(&channel_id) {
+                delete_thread(ti.as_str().unwrap()).await;
+                store_flows::del(&channel_id);
+                _ = client
+                    .create_interaction_response(
+                        ac.id.into(),
+                        &ac.token,
+                        &serde_json::json!({
+                            "content": "thread deleted",
+                            // "type": InteractionResponseType::DeferredChannelMessageWithSource as u8,
+                        }),
+                    )
+                    .await;
+                return;
             }
         }
 
