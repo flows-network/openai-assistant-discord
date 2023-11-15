@@ -10,7 +10,6 @@ use discord_flows::{
     http::HttpBuilder,
     message_handler,
     model::{
-        application::interaction::InteractionResponseType,
         prelude::application::interaction::application_command::ApplicationCommandInteraction,
         Message,
     },
@@ -47,21 +46,21 @@ async fn handle(msg: Message) {
         return;
     }
     let client = bot.get_client();
-    let thread_id = create_thread().await;
-    let chat_id = "hard_coded".to_string();
+    handle_inner(msg, client).await;
+}
 
-    store_flows::set(
-        chat_id.to_string().as_str(),
-        serde_json::Value::String(thread_id.clone()),
-        None,
-    );
+async fn handle_inner(msg: Message, client: discord_flows::http::Http) {
+    let thread_id = create_thread().await;
+    let chat_id = msg.id.to_string();
+
+    store_flows::set(&chat_id, serde_json::Value::String(thread_id.clone()), None);
+    store_flows::set("chat_id", serde_json::Value::String(chat_id), None);
     let response = run_message(thread_id.as_str(), msg.content).await;
-    let resp = serde_json::json!({ "content": response });
     _ = client
         .send_message(
             msg.channel_id.into(),
             &serde_json::json!({
-                "content": resp,
+                "content": response,
             }),
         )
         .await;
@@ -74,27 +73,31 @@ async fn handler(ac: ApplicationCommandInteraction) {
     let bot = ProvidedBot::new(discord_token);
     let client = bot.get_client();
 
-    let chat_id = "hard_coded".to_string();
-    // let chat_id = ac.application_id.into().chars().take(9).collect::<String>();
     client.set_application_id(ac.application_id.into());
 
-    _ = client
-        .create_interaction_response(
-            ac.id.into(),
-            &ac.token,
-            &serde_json::json!({
-                "type": InteractionResponseType::DeferredChannelMessageWithSource as u8,
-            }),
-        )
-        .await;
-    let options = &ac.data.options;
+    let _ = respond_to_ac(ac, client).await;
+}
 
+async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows::http::Http) {
     match ac.data.name.as_str() {
         "restart" => {
-            if let Some(ti) = store_flows::get(chat_id.as_str()) {
-                delete_thread(ti.as_str().unwrap()).await;
-                store_flows::del(chat_id.to_string().as_str());
-                return;
+            // let chat_id = ac.channel_id.into();
+            if let Some(id) = store_flows::get("chat_id") {
+                if let Some(ti) = store_flows::get(id.as_str().unwrap()) {
+                    delete_thread(ti.as_str().unwrap()).await;
+                    store_flows::del(id.as_str().unwrap());
+                    _ = client
+                        .create_interaction_response(
+                            ac.id.into(),
+                            &ac.token,
+                            &serde_json::json!({
+                                "content": "thread deleted",
+                                // "type": InteractionResponseType::DeferredChannelMessageWithSource as u8,
+                            }),
+                        )
+                        .await;
+                    return;
+                }
             }
         }
 

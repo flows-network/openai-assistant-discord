@@ -16,6 +16,6 @@ flowsnet-platform-sdk = "0.1"
 log = "0.4"
 store-flows = "0.3.1"
 
-discord-flows = "0.6.1"
+discord-flows = "0.6.3"
 serde = { version = "1", features = ["derive"] }
 dotenv = "0.15.0"
