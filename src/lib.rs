@@ -50,17 +50,16 @@ async fn handle(msg: Message) {
 }
 
 async fn handle_inner(msg: Message, client: discord_flows::http::Http) {
-    let thread_id = create_thread().await;
     let channel_id = msg.channel_id.to_string();
 
-    if store_flows::get(&channel_id).is_none() {
-        let thread_id = create_thread().await;
-        store_flows::set(
-            &channel_id,
-            serde_json::Value::String(thread_id.clone()),
-            None,
-        );
-    }
+    let thread_id = match store_flows::get(&channel_id) {
+        Some(ti) => ti.as_str().unwrap().to_owned(),
+        None => {
+            let ti = create_thread().await;
+            store_flows::set(&channel_id, serde_json::Value::String(ti.clone()), None);
+            ti
+        }
+    };
 
     let response = run_message(thread_id.as_str(), msg.content).await;
     _ = client
@@ -98,19 +97,10 @@ async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows:
                         &ac.token,
                         &serde_json::json!({
                             "content": "thread deleted",
-                            // "type": InteractionResponseType::DeferredChannelMessageWithSource as u8,
                         }),
                     )
                     .await;
                 return;
-            } else {
-                let thread_id = create_thread().await;
-
-                store_flows::set(
-                    &channel_id,
-                    serde_json::Value::String(thread_id.clone()),
-                    None,
-                );
             }
         }
 
