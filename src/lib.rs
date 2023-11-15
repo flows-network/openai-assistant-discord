@@ -53,11 +53,15 @@ async fn handle_inner(msg: Message, client: discord_flows::http::Http) {
     let thread_id = create_thread().await;
     let channel_id = msg.channel_id.to_string();
 
-    store_flows::set(
-        &channel_id,
-        serde_json::Value::String(thread_id.clone()),
-        None,
-    );
+    if store_flows::get(&channel_id).is_none() {
+        let thread_id = create_thread().await;
+        store_flows::set(
+            &channel_id,
+            serde_json::Value::String(thread_id.clone()),
+            None,
+        );
+    }
+
     let response = run_message(thread_id.as_str(), msg.content).await;
     _ = client
         .send_message(
