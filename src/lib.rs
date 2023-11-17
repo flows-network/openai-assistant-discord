@@ -92,6 +92,7 @@ async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows:
             if let Some(ti) = store_flows::get(&channel_id) {
                 delete_thread(ti.as_str().unwrap()).await;
                 store_flows::del(&channel_id);
+                return;
                 _ = client
                     .create_interaction_response(
                         ac.id.into(),
