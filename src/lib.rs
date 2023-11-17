@@ -116,7 +116,7 @@ async fn create_thread() -> String {
 
     match client.threads().create(create_thread_request).await {
         Ok(to) => {
-            log::error!("New thread (ID: {}) created.", to.id);
+            log::info!("New thread (ID: {}) created.", to.id);
             to.id
         }
         Err(e) => {
@@ -130,7 +130,7 @@ async fn delete_thread(thread_id: &str) {
 
     match client.threads().delete(thread_id).await {
         Ok(_) => {
-            log::error!("Old thread (ID: {}) deleted.", thread_id);
+            log::info!("Old thread (ID: {}) deleted.", thread_id);
         }
         Err(e) => {
             log::error!("Failed to delete thread. {:?}", e);
