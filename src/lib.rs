@@ -56,6 +56,11 @@ async fn handle_inner(msg: Message, client: discord_flows::http::Http) {
         Some(ti) => ti.as_str().unwrap().to_owned(),
         None => {
             let ti = create_thread().await;
+            log::info!(
+                "Thread created: {}, channel_id: {}",
+                ti.clone(),
+                channel_id.clone()
+            );
             store_flows::set(&channel_id, serde_json::Value::String(ti.clone()), None);
             ti
         }
@@ -159,6 +164,7 @@ async fn run_message(thread_id: &str, text: String) -> String {
         .await
         .unwrap()
         .id;
+    log::info!("Run created {}", run_id);
 
     let mut result = Some("Timeout");
     for _ in 0..5 {
