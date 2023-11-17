@@ -90,18 +90,25 @@ async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows:
         "restart" => {
             let channel_id = ac.channel_id.to_string();
             if let Some(ti) = store_flows::get(&channel_id) {
-                delete_thread(ti.as_str().unwrap()).await;
                 store_flows::del(&channel_id);
-                return;
-                _ = client
-                    .create_interaction_response(
-                        ac.id.into(),
-                        &ac.token,
-                        &serde_json::json!({
-                            "content": "thread deleted",
-                        }),
-                    )
-                    .await;
+                let openai_client = Client::new();
+                match openai_client.threads().delete(ti.as_str().unwrap()).await {
+                    Ok(_) => {
+                        log::info!("Old thread (ID: {}) deleted.", ti);
+                        _ = client
+                            .create_interaction_response(
+                                ac.id.into(),
+                                &ac.token,
+                                &serde_json::json!({
+                                    "content": "thread deleted",
+                                }),
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        log::error!("Failed to delete thread. {:?}", e);
+                    }
+                }
                 return;
             }
         }
@@ -126,18 +133,18 @@ async fn create_thread() -> String {
     }
 }
 
-async fn delete_thread(thread_id: &str) {
-    let client = Client::new();
+// async fn delete_thread(thread_id: &str) {
+//     let client = Client::new();
 
-    match client.threads().delete(thread_id).await {
-        Ok(_) => {
-            log::info!("Old thread (ID: {}) deleted.", thread_id);
-        }
-        Err(e) => {
-            log::error!("Failed to delete thread. {:?}", e);
-        }
-    }
-}
+//     match client.threads().delete(thread_id).await {
+//         Ok(_) => {
+//             log::info!("Old thread (ID: {}) deleted.", thread_id);
+//         }
+//         Err(e) => {
+//             log::error!("Failed to delete thread. {:?}", e);
+//         }
+//     }
+// }
 
 async fn run_message(thread_id: &str, text: String) -> String {
     let client = Client::new();
