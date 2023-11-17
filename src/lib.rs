@@ -96,9 +96,8 @@ async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows:
                     Ok(_) => {
                         log::info!("Old thread (ID: {}) deleted.", ti);
                         match client
-                            .create_interaction_response(
-                                ac.id.into(),
-                                &ac.token,
+                            .send_message(
+                                ac.channel_id.into(),
                                 &serde_json::json!({
                                     "content": "thread deleted",
                                 }),
