@@ -95,14 +95,6 @@ async fn respond_to_ac(ac: ApplicationCommandInteraction, client: discord_flows:
                 match openai_client.threads().delete(ti.as_str().unwrap()).await {
                     Ok(_) => {
                         log::info!("Old thread (ID: {}) deleted.", ti);
-                        let _ = client
-                            .send_message(
-                                ac.channel_id.into(),
-                                &serde_json::json!({
-                                    "content": "thread deleted",
-                                }),
-                            )
-                            .await;
                     }
                     Err(e) => {
                         log::error!("Failed to delete thread. {:?}", e);
@@ -131,19 +123,6 @@ async fn create_thread() -> String {
         }
     }
 }
-
-// async fn delete_thread(thread_id: &str) {
-//     let client = Client::new();
-
-//     match client.threads().delete(thread_id).await {
-//         Ok(_) => {
-//             log::info!("Old thread (ID: {}) deleted.", thread_id);
-//         }
-//         Err(e) => {
-//             log::error!("Failed to delete thread. {:?}", e);
-//         }
-//     }
-// }
 
 async fn run_message(thread_id: &str, text: String) -> String {
     let client = Client::new();
